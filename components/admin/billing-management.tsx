@@ -1,49 +1,74 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Search, User, Calendar, Bell } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Search, User, Calendar, Bell } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface User {
-  id: number
-  name: string
-  email: string
-  role: string
-  company?: string
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  company?: string;
 }
 
 interface Device {
-  id: string
-  name: string
-  location: string
-  status: string
+  id: string;
+  name: string;
+  location: string;
+  status: string;
   billing?: {
-    type: string
-    paymentStatus: string
-    lastPayment: string
-  }
+    type: string;
+    paymentStatus: string;
+    lastPayment: string;
+  };
 }
 
 interface AccessRight {
-  userId: number
-  deviceId: string
-  granted: boolean
+  userId: number;
+  deviceId: string;
+  granted: boolean;
 }
 
 interface BillingManagementProps {
-  devices: Device[]
-  users: User[]
-  accessRights: AccessRight[]
-  blockedDevices: string[]
-  onToggleDeviceBlock: (deviceId: string) => void
+  devices: Device[];
+  users: User[];
+  accessRights: AccessRight[];
+  blockedDevices: string[];
+  onToggleDeviceBlock: (deviceId: string) => void;
 }
 
 export default function BillingManagement({
@@ -53,49 +78,59 @@ export default function BillingManagement({
   blockedDevices,
   onToggleDeviceBlock,
 }: BillingManagementProps) {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [isUserDevicesDialogOpen, setIsUserDevicesDialogOpen] = useState(false)
-  const [paymentAlerts, setPaymentAlerts] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isUserDevicesDialogOpen, setIsUserDevicesDialogOpen] = useState(false);
+  const [paymentAlerts, setPaymentAlerts] = useState(true);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+
+  const handleTabClick = (value: string) => {
+    setActiveTab(activeTab === value ? null : value);
+  };
 
   const filteredDevices = devices.filter(
     (device) =>
       device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       device.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      device.id.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      device.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getUserForDevice = (deviceId: string) => {
-    const userAccess = accessRights.find((access) => access.deviceId === deviceId && access.granted)
-    if (!userAccess) return null
+    const userAccess = accessRights.find(
+      (access) => access.deviceId === deviceId && access.granted
+    );
+    if (!userAccess) return null;
 
-    return users.find((user) => user.id === userAccess.userId) || null
-  }
+    return users.find((user) => user.id === userAccess.userId) || null;
+  };
 
   const getUserDevices = (userId: number) => {
     const userDeviceIds = accessRights
       .filter((access) => access.userId === userId && access.granted)
-      .map((access) => access.deviceId)
+      .map((access) => access.deviceId);
 
-    return devices.filter((device) => userDeviceIds.includes(device.id))
-  }
+    return devices.filter((device) => userDeviceIds.includes(device.id));
+  };
 
   const openUserDevicesDialog = (user: User) => {
-    setSelectedUser(user)
-    setIsUserDevicesDialogOpen(true)
-  }
+    setSelectedUser(user);
+    setIsUserDevicesDialogOpen(true);
+  };
 
   const getRentalCount = () => {
-    return devices.filter((device) => device.billing?.type === "Rental").length
-  }
+    return devices.filter((device) => device.billing?.type === "Rental").length;
+  };
 
   const getSalesCount = () => {
-    return devices.filter((device) => device.billing?.type === "Purchase").length
-  }
+    return devices.filter((device) => device.billing?.type === "Purchase")
+      .length;
+  };
 
   const getOverdueCount = () => {
-    return devices.filter((device) => device.billing?.paymentStatus === "Overdue").length
-  }
+    return devices.filter(
+      (device) => device.billing?.paymentStatus === "Overdue"
+    ).length;
+  };
 
   return (
     <>
@@ -114,11 +149,15 @@ export default function BillingManagement({
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Rental Devices</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Rental Devices
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{getRentalCount()}</div>
-            <p className="text-xs text-muted-foreground mt-1">Monthly recurring revenue</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Monthly recurring revenue
+            </p>
           </CardContent>
         </Card>
 
@@ -128,17 +167,23 @@ export default function BillingManagement({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{getSalesCount()}</div>
-            <p className="text-xs text-muted-foreground mt-1">One-time purchases</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              One-time purchases
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Overdue Payments</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Overdue Payments
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{getOverdueCount()}</div>
-            <p className="text-xs text-muted-foreground mt-1">Requires attention</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Requires attention
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -154,87 +199,112 @@ export default function BillingManagement({
           />
         </div>
 
-        <Tabs defaultValue="settings" className="w-full md:w-auto">
+        <Tabs value={activeTab || ""} className="w-full md:w-auto relative">
           <TabsList>
-            <TabsTrigger value="settings" className="flex items-center gap-1">
+            <TabsTrigger
+              value="settings"
+              className="flex items-center gap-1"
+              onClick={() =>
+                setActiveTab(activeTab === "settings" ? null : "settings")
+              }
+            >
               <Calendar className="h-4 w-4" />
               <span className="hidden md:inline">Payment Cycle</span>
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-1">
+            <TabsTrigger
+              value="notifications"
+              className="flex items-center gap-1"
+              onClick={() =>
+                setActiveTab(
+                  activeTab === "notifications" ? null : "notifications"
+                )
+              }
+            >
               <Bell className="h-4 w-4" />
               <span className="hidden md:inline">Notifications</span>
             </TabsTrigger>
           </TabsList>
-          <TabsContent
-            value="settings"
-            className="absolute right-0 mt-2 w-[300px] rounded-md border bg-background shadow-md z-10"
-          >
-            <div className="p-4">
-              <h4 className="font-medium mb-2">Payment Cycle Settings</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Billing Cycle</span>
-                  <Select defaultValue="monthly">
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="quarterly">Quarterly</SelectItem>
-                      <SelectItem value="annually">Annually</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+          {activeTab && (
+            <>
+              <TabsContent
+                value="settings"
+                className="absolute right-0 mt-2 w-[300px] rounded-md border bg-background shadow-md z-50"
+              >
+                <div className="p-4">
+                  <h4 className="font-medium mb-2">Payment Cycle Settings</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Billing Cycle</span>
+                      <Select defaultValue="monthly">
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly</SelectItem>
+                          <SelectItem value="annually">Annually</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Billing Date</span>
+                      <Select defaultValue="1">
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1st of month</SelectItem>
+                          <SelectItem value="15">15th of month</SelectItem>
+                          <SelectItem value="last">Last day</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Billing Date</span>
-                  <Select defaultValue="1">
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1st of month</SelectItem>
-                      <SelectItem value="15">15th of month</SelectItem>
-                      <SelectItem value="last">Last day</SelectItem>
-                    </SelectContent>
-                  </Select>
+              </TabsContent>
+
+              <TabsContent
+                value="notifications"
+                className="absolute right-0 mt-2 w-[300px] rounded-md border bg-background shadow-md z-50"
+              >
+                <div className="p-4">
+                  <h4 className="font-medium mb-2">Payment Notifications</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Payment Alerts</span>
+                      <Switch
+                        checked={paymentAlerts}
+                        onCheckedChange={setPaymentAlerts}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Reminder Days</span>
+                      <Select defaultValue="7">
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="3">3 days before</SelectItem>
+                          <SelectItem value="7">7 days before</SelectItem>
+                          <SelectItem value="14">14 days before</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </TabsContent>
-          <TabsContent
-            value="notifications"
-            className="absolute right-0 mt-2 w-[300px] rounded-md border bg-background shadow-md z-10"
-          >
-            <div className="p-4">
-              <h4 className="font-medium mb-2">Payment Notifications</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Payment Alerts</span>
-                  <Switch checked={paymentAlerts} onCheckedChange={setPaymentAlerts} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Reminder Days</span>
-                  <Select defaultValue="7">
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="3">3 days before</SelectItem>
-                      <SelectItem value="7">7 days before</SelectItem>
-                      <SelectItem value="14">14 days before</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Billing Overview</CardTitle>
-          <CardDescription>Manage device billing and payment status.</CardDescription>
+          <CardDescription>
+            Manage device billing and payment status.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -251,15 +321,26 @@ export default function BillingManagement({
             </TableHeader>
             <TableBody>
               {filteredDevices.map((device) => {
-                const user = getUserForDevice(device.id)
-                const isBlocked = blockedDevices.includes(device.id)
+                const user = getUserForDevice(device.id);
+                const isBlocked = blockedDevices.includes(device.id);
 
                 return (
-                  <TableRow key={device.id} className={isBlocked ? "opacity-60" : ""}>
-                    <TableCell className="font-mono text-sm">{device.id}</TableCell>
+                  <TableRow
+                    key={device.id}
+                    className={isBlocked ? "opacity-60" : ""}
+                  >
+                    <TableCell className="font-mono text-sm">
+                      {device.id}
+                    </TableCell>
                     <TableCell className="font-medium">{device.name}</TableCell>
                     <TableCell>
-                      <Badge variant={device.status === "Online" ? "default" : "secondary"}>{device.status}</Badge>
+                      <Badge
+                        variant={
+                          device.status === "Online" ? "default" : "secondary"
+                        }
+                      >
+                        {device.status}
+                      </Badge>
                       {isBlocked && (
                         <Badge variant="destructive" className="ml-2">
                           Blocked
@@ -273,14 +354,16 @@ export default function BillingManagement({
                           device.billing?.paymentStatus === "Overdue"
                             ? "destructive"
                             : device.billing?.paymentStatus === "Current"
-                              ? "default"
-                              : "outline"
+                            ? "default"
+                            : "outline"
                         }
                       >
                         {device.billing?.paymentStatus || "N/A"}
                       </Badge>
                     </TableCell>
-                    <TableCell>{device.billing?.lastPayment || "N/A"}</TableCell>
+                    <TableCell>
+                      {device.billing?.lastPayment || "N/A"}
+                    </TableCell>
                     <TableCell>
                       {user ? (
                         <Button
@@ -293,15 +376,20 @@ export default function BillingManagement({
                           {user.name}
                         </Button>
                       ) : (
-                        <span className="text-muted-foreground">Unassigned</span>
+                        <span className="text-muted-foreground">
+                          Unassigned
+                        </span>
                       )}
                     </TableCell>
                   </TableRow>
-                )
+                );
               })}
               {filteredDevices.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-4 text-muted-foreground"
+                  >
                     No devices found
                   </TableCell>
                 </TableRow>
@@ -312,12 +400,17 @@ export default function BillingManagement({
       </Card>
 
       {/* User Devices Dialog */}
-      <Dialog open={isUserDevicesDialogOpen} onOpenChange={setIsUserDevicesDialogOpen}>
+      <Dialog
+        open={isUserDevicesDialogOpen}
+        onOpenChange={setIsUserDevicesDialogOpen}
+      >
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>User Devices</DialogTitle>
             <DialogDescription>
-              {selectedUser ? `Devices assigned to ${selectedUser.name}` : "User devices"}
+              {selectedUser
+                ? `Devices assigned to ${selectedUser.name}`
+                : "User devices"}
             </DialogDescription>
           </DialogHeader>
 
@@ -338,7 +431,9 @@ export default function BillingManagement({
                 </div>
                 <div>
                   <p className="text-sm font-medium">Total Devices</p>
-                  <p className="text-sm">{getUserDevices(selectedUser.id).length}</p>
+                  <p className="text-sm">
+                    {getUserDevices(selectedUser.id).length}
+                  </p>
                 </div>
               </div>
 
@@ -354,15 +449,30 @@ export default function BillingManagement({
                 </TableHeader>
                 <TableBody>
                   {getUserDevices(selectedUser.id).map((device) => {
-                    const isBlocked = blockedDevices.includes(device.id)
+                    const isBlocked = blockedDevices.includes(device.id);
 
                     return (
-                      <TableRow key={device.id} className={isBlocked ? "opacity-60" : ""}>
-                        <TableCell className="font-mono text-sm">{device.id}</TableCell>
-                        <TableCell className="font-medium">{device.name}</TableCell>
+                      <TableRow
+                        key={device.id}
+                        className={isBlocked ? "opacity-60" : ""}
+                      >
+                        <TableCell className="font-mono text-sm">
+                          {device.id}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {device.name}
+                        </TableCell>
                         <TableCell>{device.location}</TableCell>
                         <TableCell>
-                          <Badge variant={device.status === "Online" ? "default" : "secondary"}>{device.status}</Badge>
+                          <Badge
+                            variant={
+                              device.status === "Online"
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {device.status}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -374,11 +484,14 @@ export default function BillingManagement({
                           </Button>
                         </TableCell>
                       </TableRow>
-                    )
+                    );
                   })}
                   {getUserDevices(selectedUser.id).length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-4 text-muted-foreground"
+                      >
                         No devices assigned to this user
                       </TableCell>
                     </TableRow>
@@ -390,5 +503,5 @@ export default function BillingManagement({
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
