@@ -8,9 +8,9 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Qsafe Web",
-  description: "Secure IoT Device Access Management",
+  description: "Secure Device Access Management",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/icon.ico",
   },
 };
 
