@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, User, Calendar, Bell } from "lucide-react";
+import { Search, User, Calendar, Bell, DollarSign } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -31,13 +31,17 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { format, differenceInMonths } from "date-fns";
 
-interface User {
+interface UserType {
   id: number;
   name: string;
   email: string;
@@ -50,6 +54,9 @@ interface Device {
   name: string;
   location: string;
   status: string;
+  deviceType: "Sales" | "Rental";
+  installedDate: string;
+  calibrationDueDate?: string;
   billing?: {
     type: string;
     paymentStatus: string;
@@ -65,7 +72,7 @@ interface AccessRight {
 
 interface BillingManagementProps {
   devices: Device[];
-  users: User[];
+  users: UserType[];
   accessRights: AccessRight[];
   blockedDevices: string[];
   onToggleDeviceBlock: (deviceId: string) => void;
@@ -79,8 +86,13 @@ export default function BillingManagement({
   onToggleDeviceBlock,
 }: BillingManagementProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [isUserDevicesDialogOpen, setIsUserDevicesDialogOpen] = useState(false);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [selectedDeviceForPayment, setSelectedDeviceForPayment] =
+    useState<Device | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentReceipt, setPaymentReceipt] = useState("");
   const [paymentAlerts, setPaymentAlerts] = useState(true);
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
@@ -112,25 +124,60 @@ export default function BillingManagement({
     return devices.filter((device) => userDeviceIds.includes(device.id));
   };
 
-  const openUserDevicesDialog = (user: User) => {
+  const openUserDevicesDialog = (user: UserType) => {
     setSelectedUser(user);
     setIsUserDevicesDialogOpen(true);
   };
 
-  const getRentalCount = () => {
-    return devices.filter((device) => device.billing?.type === "Rental").length;
+  const openPaymentDialog = (device: Device) => {
+    setSelectedDeviceForPayment(device);
+
+    // Calculate due amount based on installed date
+    if (device.deviceType === "Rental" && device.installedDate) {
+      const installedDate = new Date(device.installedDate);
+      const today = new Date();
+      const monthsDiff = differenceInMonths(today, installedDate);
+      const baseRate = 29.99; // Example monthly rate
+      const dueAmount = (monthsDiff + 1) * baseRate;
+      setPaymentAmount(dueAmount.toFixed(2));
+    } else {
+      setPaymentAmount("0.00");
+    }
+
+    setPaymentReceipt("");
+    setIsPaymentDialogOpen(true);
   };
 
-  const getSalesCount = () => {
-    return devices.filter((device) => device.billing?.type === "Purchase")
-      .length;
+  const handlePayment = () => {
+    // In a real app, you would process the payment and update the device's payment status
+    setIsPaymentDialogOpen(false);
+    setSelectedDeviceForPayment(null);
   };
 
-  const getOverdueCount = () => {
-    return devices.filter(
-      (device) => device.billing?.paymentStatus === "Overdue"
-    ).length;
-  };
+  // Calculate summary counts
+  const totalDevices = devices.length;
+  const connectedDevices = devices.filter(
+    (device) => device.status === "Online"
+  ).length;
+  const disconnectedDevices = devices.filter(
+    (device) => device.status === "Offline"
+  ).length;
+  const disconnectedSalesDevices = devices.filter(
+    (device) => device.status === "Offline" && device.deviceType === "Sales"
+  ).length;
+  const disconnectedRentalDevices = devices.filter(
+    (device) => device.status === "Offline" && device.deviceType === "Rental"
+  ).length;
+  const blockedDevicesCount = blockedDevices.length;
+  const rentalCount = devices.filter(
+    (device) => device.deviceType === "Rental"
+  ).length;
+  const salesCount = devices.filter(
+    (device) => device.deviceType === "Sales"
+  ).length;
+  const overdueCount = devices.filter(
+    (device) => device.billing?.paymentStatus === "Overdue"
+  ).length;
 
   return (
     <>
@@ -140,9 +187,9 @@ export default function BillingManagement({
             <CardTitle className="text-sm font-medium">Total Devices</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{devices.length}</div>
+            <div className="text-2xl font-bold">{totalDevices}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {devices.filter((d) => d.status === "Online").length} online
+              {connectedDevices} online
             </p>
           </CardContent>
         </Card>
@@ -154,7 +201,7 @@ export default function BillingManagement({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{getRentalCount()}</div>
+            <div className="text-2xl font-bold">{rentalCount}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Monthly recurring revenue
             </p>
@@ -163,10 +210,10 @@ export default function BillingManagement({
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Sold Devices</CardTitle>
+            <CardTitle className="text-sm font-medium">Sales Devices</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{getSalesCount()}</div>
+            <div className="text-2xl font-bold">{salesCount}</div>
             <p className="text-xs text-muted-foreground mt-1">
               One-time purchases
             </p>
@@ -180,9 +227,75 @@ export default function BillingManagement({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{getOverdueCount()}</div>
+            <div className="text-2xl font-bold">{overdueCount}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Requires attention
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 mb-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Disconnected Devices
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">
+              {disconnectedDevices}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Requires attention
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Disconnected Sales
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-amber-500">
+              {disconnectedSalesDevices}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              One-time purchases
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Disconnected Rental
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-500">
+              {disconnectedRentalDevices}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Monthly recurring
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Blocked Devices
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-500">
+              {blockedDevicesCount}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Access restricted
             </p>
           </CardContent>
         </Card>
@@ -316,13 +429,25 @@ export default function BillingManagement({
                 <TableHead>Type</TableHead>
                 <TableHead>Payment Status</TableHead>
                 <TableHead>Last Payment</TableHead>
+                <TableHead>Calibration Due</TableHead>
                 <TableHead>User</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredDevices.map((device) => {
                 const user = getUserForDevice(device.id);
                 const isBlocked = blockedDevices.includes(device.id);
+
+                // Calculate due amount based on installed date
+                let dueAmount = 0;
+                if (device.deviceType === "Rental" && device.installedDate) {
+                  const installedDate = new Date(device.installedDate);
+                  const today = new Date();
+                  const monthsDiff = differenceInMonths(today, installedDate);
+                  const baseRate = 29.99; // Example monthly rate
+                  dueAmount = (monthsDiff + 1) * baseRate;
+                }
 
                 return (
                   <TableRow
@@ -347,7 +472,15 @@ export default function BillingManagement({
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>{device.billing?.type || "N/A"}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          device.deviceType === "Sales" ? "outline" : "default"
+                        }
+                      >
+                        {device.deviceType}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       <Badge
                         variant={
@@ -360,9 +493,24 @@ export default function BillingManagement({
                       >
                         {device.billing?.paymentStatus || "N/A"}
                       </Badge>
+                      {device.deviceType === "Rental" && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          ${dueAmount.toFixed(2)} due
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       {device.billing?.lastPayment || "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      {device.calibrationDueDate ? (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                          {device.calibrationDueDate}
+                        </div>
+                      ) : (
+                        "Not set"
+                      )}
                     </TableCell>
                     <TableCell>
                       {user ? (
@@ -381,13 +529,33 @@ export default function BillingManagement({
                         </span>
                       )}
                     </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant={isBlocked ? "default" : "destructive"}
+                          size="sm"
+                          onClick={() => onToggleDeviceBlock(device.id)}
+                        >
+                          {isBlocked ? "Unblock" : "Block"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openPaymentDialog(device)}
+                          className="flex items-center gap-1"
+                        >
+                          <DollarSign className="h-3.5 w-3.5" />
+                          Payment
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 );
               })}
               {filteredDevices.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={9}
                     className="text-center py-4 text-muted-foreground"
                   >
                     No devices found
@@ -500,6 +668,95 @@ export default function BillingManagement({
               </Table>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Dialog */}
+      <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Process Payment</DialogTitle>
+            <DialogDescription>
+              {selectedDeviceForPayment
+                ? `Record payment for ${selectedDeviceForPayment.name} (${selectedDeviceForPayment.id})`
+                : "Record device payment"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedDeviceForPayment && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium">Device</p>
+                  <p className="text-sm">{selectedDeviceForPayment.name}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">ID</p>
+                  <p className="text-sm font-mono">
+                    {selectedDeviceForPayment.id}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Type</p>
+                  <p className="text-sm">
+                    {selectedDeviceForPayment.deviceType}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Installed Date</p>
+                  <p className="text-sm">
+                    {selectedDeviceForPayment.installedDate || "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="paymentAmount">Payment Amount</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5">$</span>
+                  <Input
+                    id="paymentAmount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="pl-7"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="paymentReceipt">Payment Receipt/Notes</Label>
+                <Textarea
+                  id="paymentReceipt"
+                  placeholder="Enter payment details, receipt number, or notes"
+                  value={paymentReceipt}
+                  onChange={(e) => setPaymentReceipt(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="paymentDate">Payment Date</Label>
+                <Input
+                  id="paymentDate"
+                  type="date"
+                  defaultValue={format(new Date(), "yyyy-MM-dd")}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsPaymentDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handlePayment}>Record Payment</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

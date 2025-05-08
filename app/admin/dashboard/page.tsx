@@ -12,6 +12,7 @@ import { AdminProvider } from "@/contexts/admin-context";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { format, addMonths, subMonths } from "date-fns";
 import { User } from "@/types/user";
 
 // Sample data for demonstration
@@ -68,17 +69,28 @@ const initialUsers: User[] = [
   },
 ];
 
+const today = new Date();
+
 const initialDevices = [
   {
     id: "DEV001",
     name: "Temperature Sensor",
     location: "Living Room",
     status: "Online",
-    configuration: { reportInterval: 5, threshold: 30 },
+    deviceType: "Rental",
+    installedDate: format(subMonths(today, 3), "yyyy-MM-dd"),
+    calibrationDueDate: format(addMonths(today, 3), "yyyy-MM-dd"),
+    configuration: {
+      reportInterval: 5,
+      threshold: 30,
+      vibration: true,
+      lutronNoise: false,
+      values: 25,
+    },
     billing: {
       type: "Rental",
       paymentStatus: "Current",
-      lastPayment: "2023-04-15",
+      lastPayment: format(subMonths(today, 1), "yyyy-MM-dd"),
     },
   },
   {
@@ -86,11 +98,20 @@ const initialDevices = [
     name: "Smart Lock",
     location: "Front Door",
     status: "Online",
-    configuration: { autoLock: true, pinRequired: true },
+    deviceType: "Sales",
+    installedDate: format(subMonths(today, 6), "yyyy-MM-dd"),
+    calibrationDueDate: format(addMonths(today, 6), "yyyy-MM-dd"),
+    configuration: {
+      autoLock: true,
+      pinRequired: true,
+      vibration: false,
+      lutronNoise: true,
+      values: 10,
+    },
     billing: {
       type: "Purchase",
       paymentStatus: "Current",
-      lastPayment: "2023-03-10",
+      lastPayment: format(subMonths(today, 6), "yyyy-MM-dd"),
     },
   },
   {
@@ -98,11 +119,20 @@ const initialDevices = [
     name: "Security Camera",
     location: "Backyard",
     status: "Offline",
-    configuration: { resolution: "1080p", motionDetection: true },
+    deviceType: "Rental",
+    installedDate: format(subMonths(today, 2), "yyyy-MM-dd"),
+    calibrationDueDate: format(addMonths(today, 1), "yyyy-MM-dd"),
+    configuration: {
+      resolution: "1080p",
+      motionDetection: true,
+      vibration: true,
+      lutronNoise: true,
+      values: 50,
+    },
     billing: {
       type: "Rental",
       paymentStatus: "Overdue",
-      lastPayment: "2023-01-20",
+      lastPayment: format(subMonths(today, 3), "yyyy-MM-dd"),
     },
   },
   {
@@ -110,22 +140,73 @@ const initialDevices = [
     name: "Humidity Sensor",
     location: "Bathroom",
     status: "Online",
-    configuration: { reportInterval: 10, threshold: 70 },
+    deviceType: "Sales",
+    installedDate: format(subMonths(today, 1), "yyyy-MM-dd"),
+    calibrationDueDate: format(addMonths(today, 5), "yyyy-MM-dd"),
+    configuration: {
+      reportInterval: 10,
+      threshold: 70,
+      vibration: false,
+      lutronNoise: false,
+      values: 15,
+    },
     billing: {
       type: "Rental",
       paymentStatus: "Current",
-      lastPayment: "2023-04-01",
+      lastPayment: format(subMonths(today, 1), "yyyy-MM-dd"),
     },
   },
 ];
 
 const initialAccessRights = [
-  { userId: 1, deviceId: "DEV001", granted: true },
-  { userId: 1, deviceId: "DEV002", granted: true },
-  { userId: 2, deviceId: "DEV002", granted: true },
-  { userId: 2, deviceId: "DEV003", granted: true },
-  { userId: 3, deviceId: "DEV001", granted: true },
-  { userId: 3, deviceId: "DEV004", granted: true },
+  {
+    userId: 1,
+    deviceId: "DEV001",
+    granted: true,
+    assignedDate: format(subMonths(today, 3), "yyyy-MM-dd"),
+    dueDate: format(addMonths(today, 1), "yyyy-MM-dd"),
+    deviceType: "Rental",
+  },
+  {
+    userId: 1,
+    deviceId: "DEV002",
+    granted: true,
+    assignedDate: format(subMonths(today, 6), "yyyy-MM-dd"),
+    dueDate: format(addMonths(today, 1), "yyyy-MM-dd"),
+    deviceType: "Sales",
+  },
+  {
+    userId: 2,
+    deviceId: "DEV002",
+    granted: true,
+    assignedDate: format(subMonths(today, 6), "yyyy-MM-dd"),
+    dueDate: format(addMonths(today, 1), "yyyy-MM-dd"),
+    deviceType: "Sales",
+  },
+  {
+    userId: 2,
+    deviceId: "DEV003",
+    granted: true,
+    assignedDate: format(subMonths(today, 2), "yyyy-MM-dd"),
+    dueDate: format(addMonths(today, 1), "yyyy-MM-dd"),
+    deviceType: "Rental",
+  },
+  {
+    userId: 3,
+    deviceId: "DEV001",
+    granted: true,
+    assignedDate: format(subMonths(today, 3), "yyyy-MM-dd"),
+    dueDate: format(addMonths(today, 1), "yyyy-MM-dd"),
+    deviceType: "Rental",
+  },
+  {
+    userId: 3,
+    deviceId: "DEV004",
+    granted: true,
+    assignedDate: format(subMonths(today, 1), "yyyy-MM-dd"),
+    dueDate: format(addMonths(today, 1), "yyyy-MM-dd"),
+    deviceType: "Sales",
+  },
 ];
 
 function AdminDashboardContent() {
@@ -166,11 +247,14 @@ function AdminDashboardContent() {
       configuration: device.configuration || {
         reportInterval: 5,
         threshold: 30,
+        vibration: false,
+        lutronNoise: false,
+        values: 0,
       },
       billing: device.billing || {
         type: "Rental",
         paymentStatus: "Current",
-        lastPayment: new Date().toISOString().split("T")[0],
+        lastPayment: format(new Date(), "yyyy-MM-dd"),
       },
     };
     setDevices([...devices, newDevice]);
@@ -192,7 +276,18 @@ function AdminDashboardContent() {
       );
     } else {
       // Add new access
-      setAccessRights([...accessRights, { userId, deviceId, granted: true }]);
+      const device = devices.find((d) => d.id === deviceId);
+      setAccessRights([
+        ...accessRights,
+        {
+          userId,
+          deviceId,
+          granted: true,
+          assignedDate: format(new Date(), "yyyy-MM-dd"),
+          dueDate: format(addMonths(new Date(), 1), "yyyy-MM-dd"),
+          deviceType: device?.deviceType || "Rental",
+        },
+      ]);
     }
   };
 
