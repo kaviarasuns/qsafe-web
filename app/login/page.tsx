@@ -98,6 +98,7 @@ export default function LoginPage() {
                 required
               />
             </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full">
@@ -109,7 +110,8 @@ export default function LoginPage() {
 
       <div className="mt-4 text-sm text-muted-foreground text-center">
         <p>For demo purposes:</p>
-        <p>Login as &quot;admin&quot; to see the admin dashboard</p>
+        <p>Login as &quot;admin&quot; for full admin access</p>
+        <p>Login as &quot;billing&quot; for billing-only admin access</p>
         <p>Login with any other username to see the user dashboard</p>
       </div>
     </div>
