@@ -15,6 +15,41 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 import { User } from "@/types/user";
 
+type Device = {
+  id: string;
+  name: string;
+  location: string;
+  status: string;
+  deviceType: "Rental" | "Sales";
+  installedDate: string;
+  calibrationDueDate: string;
+  configuration: {
+    reportInterval?: number;
+    threshold?: number;
+    vibration: boolean;
+    lutronNoise: boolean;
+    values: number;
+    autoLock?: boolean;
+    pinRequired?: boolean;
+    resolution?: string;
+    motionDetection?: boolean;
+  };
+  billing: {
+    type: "Rental" | "Purchase";
+    paymentStatus: string;
+    lastPayment: string;
+  };
+};
+
+type AccessRight = {
+  userId: number;
+  deviceId: string;
+  granted: boolean;
+  assignedDate: string;
+  dueDate: string;
+  deviceType: "Rental" | "Sales";
+};
+
 // Sample data for demonstration
 const initialUsers: User[] = [
   {
@@ -71,7 +106,7 @@ const initialUsers: User[] = [
 
 const today = new Date();
 
-const initialDevices = [
+const initialDevices: Device[] = [
   {
     id: "DEV001",
     name: "Temperature Sensor",
@@ -158,7 +193,7 @@ const initialDevices = [
   },
 ];
 
-const initialAccessRights = [
+const initialAccessRights: AccessRight[] = [
   {
     userId: 1,
     deviceId: "DEV001",
@@ -212,7 +247,7 @@ const initialAccessRights = [
 function AdminDashboardContent() {
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [devices, setDevices] = useState(initialDevices);
-  const [accessRights, setAccessRights] = useState(initialAccessRights);
+  const [accessRights, setAccessRights] = useState<AccessRight[]>(initialAccessRights);
   const [blockedDevices, setBlockedDevices] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("billing");
   const { adminType, isFullAccess, isBillingAccess, isLoading } = useAdmin();
@@ -277,17 +312,19 @@ function AdminDashboardContent() {
     } else {
       // Add new access
       const device = devices.find((d) => d.id === deviceId);
-      setAccessRights([
-        ...accessRights,
-        {
-          userId,
-          deviceId,
-          granted: true,
-          assignedDate: format(new Date(), "yyyy-MM-dd"),
-          dueDate: format(addMonths(new Date(), 1), "yyyy-MM-dd"),
-          deviceType: device?.deviceType || "Rental",
-        },
-      ]);
+      if (device) {
+        setAccessRights([
+          ...accessRights,
+          {
+            userId,
+            deviceId,
+            granted: true,
+            assignedDate: format(new Date(), "yyyy-MM-dd"),
+            dueDate: format(addMonths(new Date(), 1), "yyyy-MM-dd"),
+            deviceType: device.deviceType,
+          },
+        ]);
+      }
     }
   };
 
