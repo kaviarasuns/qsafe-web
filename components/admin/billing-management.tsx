@@ -649,7 +649,7 @@ export default function BillingManagement({
         open={isUserDevicesDialogOpen}
         onOpenChange={setIsUserDevicesDialogOpen}
       >
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
             <DialogTitle>User Devices</DialogTitle>
             <DialogDescription>
