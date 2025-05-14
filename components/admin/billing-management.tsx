@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, User, Calendar, Bell, DollarSign } from "lucide-react";
+import { Search, User, Calendar, Bell, DollarSign, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -40,6 +40,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { format, differenceInMonths } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface UserType {
   id: number;
@@ -94,18 +100,45 @@ export default function BillingManagement({
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentReceipt, setPaymentReceipt] = useState("");
   const [paymentAlerts, setPaymentAlerts] = useState(true);
+
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
-  const handleTabClick = (value: string) => {
-    setActiveTab(activeTab === value ? null : value);
+  const toggleFilter = (filter: string) => {
+    setActiveFilters((prev) =>
+      prev.includes(filter)
+        ? prev.filter((f) => f !== filter)
+        : [...prev, filter]
+    );
   };
 
-  const filteredDevices = devices.filter(
-    (device) =>
+  const clearFilters = () => {
+    setActiveFilters([]);
+  };
+
+  const filteredDevices = devices.filter((device) => {
+    // Basic search filter
+    const matchesSearch =
       device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       device.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      device.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      device.id.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Apply additional filters
+    if (!matchesSearch) return false;
+
+    if (activeFilters.length === 0) return true;
+
+    return activeFilters.some((filter) => {
+      switch (filter) {
+        case "overdue":
+          return device.billing?.paymentStatus === "Overdue";
+        case "blocked":
+          return blockedDevices.includes(device.id);
+        default:
+          return true;
+      }
+    });
+  });
 
   const getUserForDevice = (deviceId: string) => {
     const userAccess = accessRights.find(
@@ -312,6 +345,49 @@ export default function BillingManagement({
           />
         </div>
 
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              Filter
+              {activeFilters.length > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {activeFilters.length}
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80">
+            <div className="space-y-4">
+              <h4 className="font-medium">Filter Billing</h4>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="filter-overdue"
+                    checked={activeFilters.includes("overdue")}
+                    onCheckedChange={() => toggleFilter("overdue")}
+                  />
+                  <Label htmlFor="filter-overdue">All Overdue</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="filter-blocked"
+                    checked={activeFilters.includes("blocked")}
+                    onCheckedChange={() => toggleFilter("blocked")}
+                  />
+                  <Label htmlFor="filter-blocked">Blocked Users</Label>
+                </div>
+              </div>
+              <div className="flex justify-between pt-2">
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  Clear Filters
+                </Button>
+                <Button size="sm">Apply Filters</Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+
         <Tabs value={activeTab || ""} className="w-full md:w-auto relative">
           <TabsList>
             <TabsTrigger
@@ -423,8 +499,8 @@ export default function BillingManagement({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Device ID</TableHead>
-                <TableHead>Device Name</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Site Name</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Payment Status</TableHead>
@@ -454,8 +530,8 @@ export default function BillingManagement({
                     key={device.id}
                     className={isBlocked ? "opacity-60" : ""}
                   >
-                    <TableCell className="font-mono text-sm">
-                      {device.id}
+                    <TableCell className="font-medium">
+                      {user ? user.name : "Unassigned"}
                     </TableCell>
                     <TableCell className="font-medium">{device.name}</TableCell>
                     <TableCell>
@@ -531,13 +607,14 @@ export default function BillingManagement({
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button
+                        {/* Main Button */}
+                        {/* <Button
                           variant={isBlocked ? "default" : "destructive"}
                           size="sm"
                           onClick={() => onToggleDeviceBlock(device.id)}
                         >
                           {isBlocked ? "Unblock" : "Block"}
-                        </Button>
+                        </Button> */}
                         <Button
                           variant="outline"
                           size="sm"
@@ -545,7 +622,7 @@ export default function BillingManagement({
                           className="flex items-center gap-1"
                         >
                           <DollarSign className="h-3.5 w-3.5" />
-                          Payment
+                          Mark Paid
                         </Button>
                       </div>
                     </TableCell>
@@ -643,13 +720,24 @@ export default function BillingManagement({
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant={isBlocked ? "default" : "destructive"}
-                            size="sm"
-                            onClick={() => onToggleDeviceBlock(device.id)}
-                          >
-                            {isBlocked ? "Unblock" : "Block"}
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant={isBlocked ? "default" : "destructive"}
+                              size="sm"
+                              onClick={() => onToggleDeviceBlock(device.id)}
+                            >
+                              {isBlocked ? "Unblock" : "Block"}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openPaymentDialog(device)}
+                              className="flex items-center gap-1"
+                            >
+                              <DollarSign className="h-3.5 w-3.5" />
+                              Mark Paid
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -743,6 +831,33 @@ export default function BillingManagement({
                   id="paymentDate"
                   type="date"
                   defaultValue={format(new Date(), "yyyy-MM-dd")}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="nextDueDate">Next Due</Label>
+                <Select defaultValue="1">
+                  <SelectTrigger id="nextDueDate">
+                    <SelectValue placeholder="Select period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">After 1 month</SelectItem>
+                    <SelectItem value="2">After 2 months</SelectItem>
+                    <SelectItem value="3">After 3 months</SelectItem>
+                    <SelectItem value="6">After 6 months</SelectItem>
+                    <SelectItem value="12">After 12 months</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <Label htmlFor="billingNotifications">
+                  Billing Notifications
+                </Label>
+                <Switch
+                  id="billingNotifications"
+                  checked={paymentAlerts}
+                  onCheckedChange={setPaymentAlerts}
                 />
               </div>
             </div>
