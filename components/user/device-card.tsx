@@ -8,7 +8,7 @@ interface DeviceData {
 }
 
 interface Device {
-  id: number
+  id: string | number
   name: string
   location: string
   status: string

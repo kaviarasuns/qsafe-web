@@ -39,17 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  company?: string;
-  phone?: string;
-  notificationEmails?: string;
-  adminType?: "full" | "billing" | null;
-}
+import { User } from "@/types";
 
 interface UserManagementProps {
   users: User[];

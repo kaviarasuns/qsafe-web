@@ -345,48 +345,60 @@ export default function BillingManagement({
           />
         </div>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              Filter
-              {activeFilters.length > 0 && (
-                <Badge variant="secondary" className="ml-1">
-                  {activeFilters.length}
-                </Badge>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <div className="space-y-4">
-              <h4 className="font-medium">Filter Billing</h4>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="filter-overdue"
-                    checked={activeFilters.includes("overdue")}
-                    onCheckedChange={() => toggleFilter("overdue")}
-                  />
-                  <Label htmlFor="filter-overdue">All Overdue</Label>
+         {/* New Filter Button */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64">
+              <div className="space-y-4">
+                <h4 className="font-medium">Billing Filters</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="filter-overdue"
+                      checked={activeFilters.includes("overdue")}
+                      onCheckedChange={() => toggleFilter("overdue")}
+                    />
+                    <Label htmlFor="filter-overdue">All Overdue</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="filter-blocked"
+                      checked={activeFilters.includes("blocked")}
+                      onCheckedChange={() => toggleFilter("blocked")}
+                    />
+                    <Label htmlFor="filter-blocked">Blocked Users</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="filter-rental-overdue"
+                      checked={activeFilters.includes("rental-overdue")}
+                      onCheckedChange={() => toggleFilter("rental-overdue")}
+                    />
+                    <Label htmlFor="filter-rental-overdue">Rental Overdue</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="filter-sales-overdue"
+                      checked={activeFilters.includes("sales-overdue")}
+                      onCheckedChange={() => toggleFilter("sales-overdue")}
+                    />
+                    <Label htmlFor="filter-sales-overdue">Sales Overdue</Label>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="filter-blocked"
-                    checked={activeFilters.includes("blocked")}
-                    onCheckedChange={() => toggleFilter("blocked")}
-                  />
-                  <Label htmlFor="filter-blocked">Blocked Users</Label>
+                <div className="flex justify-between pt-2">
+                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                    Clear Filters
+                  </Button>
+                  <Button size="sm">Apply Filters</Button>
                 </div>
               </div>
-              <div className="flex justify-between pt-2">
-                <Button variant="outline" size="sm" onClick={clearFilters}>
-                  Clear Filters
-                </Button>
-                <Button size="sm">Apply Filters</Button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+            </PopoverContent>
+          </Popover>
 
         <Tabs value={activeTab || ""} className="w-full md:w-auto relative">
           <TabsList>
